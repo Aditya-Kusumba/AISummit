@@ -6,7 +6,7 @@ from routing_osm import generate_osm_route
 from pydantic import BaseModel
 from datetime import datetime
 from models import ResourceInventory
-
+from fastapi.middleware.cors import CORSMiddleware
 from database import SessionLocal, engine
 from models import Base, Village, Disease, OutbreakReport
 
@@ -15,6 +15,18 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Rural Health Logistics Agent")
 
+origins = [
+    "http://localhost:5173",  # your Vite frontend
+    "http://127.0.0.1:5173",  # sometimes needed for dev
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      # list of allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],        # allow GET, POST, PUT, DELETE
+    allow_headers=["*"],        # allow any headers
+)
 
 # ----------------------------
 # DB Dependency
@@ -417,3 +429,11 @@ def check_inventory(db: Session = Depends(get_db)):
         "doctors_available": inventory.doctors_available,
         "malaria_kits": inventory.malaria_kits
     }
+
+@app.get("/villages")
+def get_villages(db: Session = Depends(get_db)):
+    return db.query(Village).all()
+
+@app.get("/diseases")
+def get_diseases(db: Session = Depends(get_db)):
+    return db.query(Disease).all()
